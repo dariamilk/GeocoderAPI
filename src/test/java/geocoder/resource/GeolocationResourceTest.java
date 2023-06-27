@@ -1,5 +1,6 @@
 package geocoder.resource;
 
+import geocoder.clients.GeolocationService;
 import geocoder.model.Coordinates;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
@@ -13,19 +14,20 @@ import static io.restassured.RestAssured.*;
 import static org.hamcrest.CoreMatchers.*;
 
 @QuarkusTest
-public class GeolocationResourceTest {
+ class GeolocationResourceTest {
+
+    private static final String CORRECT_ADDRESS = "казань жуковского 4";
+    private static final String INCORRECT_ADDRESS = "djhvjffk";
     @InjectMock
     @RestClient
     GeolocationService geolocationService;
 
     @Test
-    public void testGetCoordinates () {
-        Set<Coordinates> coordinates = new HashSet<>();
-        Coordinates coordinate1 = new Coordinates(49.12976274048962, 55.7948636);
-        coordinates.add(coordinate1);
-        Mockito.when(geolocationService.getCoordinates("казань жуковского 4")).thenReturn(coordinates);
+    void testGetCoordinates () {
+        Set<Coordinates> coordinates = Set.of(new Coordinates(49.12976274048962F, 55.7948636F));
+        Mockito.when(geolocationService.getCoordinates(CORRECT_ADDRESS)).thenReturn(coordinates);
         given()
-                .pathParam("address", "казань жуковского 4")
+                .pathParam("address", CORRECT_ADDRESS)
                 .when().get("/{address}")
                 .then()
                 .statusCode(200)
@@ -34,15 +36,13 @@ public class GeolocationResourceTest {
                 .body("[0].lat", is(55.7948636F));
     }
     @Test
-    public void testGetCoordinatesWhenResponseBodyIsEmpty () {
+    void testGetCoordinatesWhenResponseBodyIsEmpty () {
         Set<Coordinates> coordinates = new HashSet<>();
-        Mockito.when(geolocationService.getCoordinates("djhvjffk")).thenReturn(coordinates);
+        Mockito.when(geolocationService.getCoordinates(INCORRECT_ADDRESS)).thenReturn(coordinates);
         given()
-                .pathParam("address", "djhvjffk")
+                .pathParam("address", INCORRECT_ADDRESS)
                 .when().get("/{address}")
                 .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body(is("[]"));
+                .statusCode(404);
     }
 }
