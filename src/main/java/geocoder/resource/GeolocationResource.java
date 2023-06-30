@@ -1,31 +1,32 @@
 package geocoder.resource;
 
-import geocoder.clients.GeolocationService;
-import geocoder.model.Coordinates;
+import geocoder.exceptions.RemoteServerIsUnavailableException;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+
 import java.util.Set;
 
 @Path("")
 public class GeolocationResource {
 
-    @RestClient
+    @Inject
     GeolocationService geolocationService;
 
     @GET
     @Path("/{address}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getCoordinates (@PathParam("address") String address) {
-        Set<Coordinates> coordinates = geolocationService.getCoordinates(address);
-        if (coordinates.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        } else {
-            return Response.ok(coordinates).build();
-        }
+        return geolocationService.getCoordinates(address);
+    }
+    @ServerExceptionMapper
+    public RestResponse<String> mapException(RemoteServerIsUnavailableException x) {
+        return RestResponse.status(Response.Status.NOT_FOUND, x.getMessage());
     }
 }

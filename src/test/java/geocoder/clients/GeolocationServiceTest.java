@@ -1,44 +1,50 @@
 package geocoder.clients;
+import geocoder.exceptions.RemoteServerIsUnavailableException;
 import geocoder.model.Coordinates;
+import geocoder.resource.GeolocationService;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.mockito.InjectMock;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import java.util.HashSet;
 import java.util.Set;
 
 
+
 @QuarkusTest
     class GeolocationServiceTest {
-    private static final String CORRECT_ADDRESS = "kazan kremlevskaya 18";
-    private static final String INCORRECT_ADDRESS = "dfjdfjfdk";
-    private static final String ADDRESS_THROWS_EXCEPTION = "moscow";
+    private static final String CORRECT_ADDRESS = "казань жуковского 4";
+    private static final String INCORRECT_ADDRESS = "djhvjffk";
 
     @Inject
-    @RestClient
     GeolocationService geolocationService;
+    @InjectMock
+    @RestClient
+    GeolocationAPIService geolocationAPIService;
 
     @Test
-    void testGetCoordinates() {
+    void getCoordinatesOK () {
+        Set<Coordinates> coordinates = Set.of(new Coordinates(49.12976274048962F, 55.7948636F));
+        Mockito.when(geolocationAPIService.getCoordinates(CORRECT_ADDRESS)).thenReturn(coordinates);
+        Assertions.assertEquals(Response.ok(coordinates).build().getEntity(), geolocationService.getCoordinates(CORRECT_ADDRESS).getEntity());
+        Assertions.assertEquals(200, geolocationService.getCoordinates(CORRECT_ADDRESS).getStatus());
+    }
+
+    @Test
+    void getCoordinatesKO () {
         Set<Coordinates> coordinates = new HashSet<>();
-        Coordinates coordinate1 = new Coordinates(49.12976274048962, 55.7948636);
-        coordinates.add(coordinate1);
-        Assertions.assertNotNull(geolocationService.getCoordinates(CORRECT_ADDRESS));
-        Assertions.assertEquals(coordinates, geolocationService.getCoordinates(CORRECT_ADDRESS));
-        Assertions.assertFalse(geolocationService.getCoordinates(CORRECT_ADDRESS).isEmpty());
+        Mockito.when(geolocationAPIService.getCoordinates(INCORRECT_ADDRESS)).thenReturn(coordinates);
+        Assertions.assertEquals(Response.noContent().build().getEntity(), geolocationService.getCoordinates(INCORRECT_ADDRESS).getEntity());
+        Assertions.assertEquals(204, geolocationService.getCoordinates(INCORRECT_ADDRESS).getStatus());
     }
     @Test
-    void testGetCoordinatesWhenResponseBodyIsEmpty() {
-        Assertions.assertNull(geolocationService.getCoordinates(INCORRECT_ADDRESS));
+    void getCoordinatesThrowsException () {
+        Mockito.when(geolocationAPIService.getCoordinates("")).thenThrow(ProcessingException.class);
+        Assertions.assertThrows(RemoteServerIsUnavailableException.class, () -> geolocationService.getCoordinates(""));
     }
-
-    @Test
-    void testToExceptionIfThrowsExceptionWhenAPIIsUnavailable () {
-        Assertions.assertThrows(RuntimeException.class, () -> GeolocationService.toException(
-                Response.ok(
-                        geolocationService.getCoordinates(ADDRESS_THROWS_EXCEPTION)).build()));
-    }
-
 }

@@ -2,13 +2,11 @@ package geocoder.clients;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-
 import java.util.Collections;
 import java.util.Map;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
-public class WiremockGeolocationService implements QuarkusTestResourceLifecycleManager {
+public class WiremockGeolocationAPIService implements QuarkusTestResourceLifecycleManager {
 
     private WireMockServer wireMockServer;
     @Override

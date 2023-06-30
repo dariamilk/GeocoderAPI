@@ -1,5 +1,6 @@
 package geocoder.clients;
 
+import geocoder.exceptions.GeolocationServerException;
 import geocoder.model.Coordinates;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -16,14 +17,14 @@ import java.util.Set;
 @ApplicationScoped
 @Produces(MediaType.APPLICATION_JSON)
 @RegisterRestClient(configKey ="geocoder-api")
-public interface GeolocationService {
+public interface GeolocationAPIService {
     @GET
     Set<Coordinates> getCoordinates(@QueryParam("q") String address);
 
     @ClientExceptionMapper
      static RuntimeException toException (Response response) {
-        if (response.getStatus() == 500) {
-            return new RuntimeException("The remote service responded with HTTP 500");
+        if (response.getStatus() != 200) {
+            return new GeolocationServerException("The remote service returned error");
         }
         return null;
     }
